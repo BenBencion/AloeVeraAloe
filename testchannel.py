@@ -1,0 +1,125 @@
+import asyncio
+import os
+from datetime import datetime
+from telethon import TelegramClient
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+import io
+import tempfile
+
+# ========================= НАСТРОЙКИ =========================
+api_id = 34096249
+api_hash = '2c7bde0885bafb5ecb20d8cbf29d421d'
+channel_username = '@BurkinaFaso11'
+BOT_TOKEN = '5111728598:AAGYV890kSko4rGfcqbW-8mNFS0JYnuHu_w'
+
+# Ссылка на главную папку Google Drive
+FOLDER_LINK = "https://drive.google.com/drive/folders/1_du2EJO0gY4zFjHi8D9qEjD18tRVac9k"
+
+# ============================================================
+
+client = TelegramClient('gdrive_sender', api_id, api_hash)
+
+
+from telethon import types
+import mimetypes
+
+from telethon import types
+import mimetypes
+
+async def send_all_files_as_album(service, folder_id, day):
+    """Исправленная версия: надёжная отправка фото и видео"""
+    query = f"'{folder_id}' in parents and trashed=false"
+    results = service.files().list(q=query, fields="files(id, name, mimeType)").execute()
+    files = results.get('files', [])
+
+    if not files:
+        await client.send_message(channel_username, f"📂 Папка на {day} число пуста.")
+        return
+
+    media_list = []
+    print(f"📥 Подготовка {len(files)} файлов...")
+
+    for file in files:
+        try:
+            mime = file.get('mimeType', '')
+            request = service.files().get_media(fileId=file['id'])
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+            fh.seek(0)
+
+            uploaded = await client.upload_file(fh, file_name=file['name'])
+
+            if mime.startswith('image/'):
+                media = types.InputMediaUploadedPhoto(file=uploaded)
+                media_list.append(media)
+
+            elif mime.startswith('video/'):
+                # Для видео указываем минимальные атрибуты
+                media = types.InputMediaUploadedDocument(
+                    file=uploaded,
+                    mime_type=mime or 'video/mp4',
+                    attributes=[
+                        types.DocumentAttributeVideo(
+                            duration=0,      # можно 0, если не знаем
+                            w=1280,          # примерные значения
+                            h=720,
+                            supports_streaming=True
+                        )
+                    ]
+                )
+                media_list.append(media)
+
+            else:
+                await client.send_file(channel_username, uploaded, filename=file['name'])
+                await asyncio.sleep(1)
+                continue
+
+        except Exception as e:
+            print(f"❌ Ошибка подготовки {file['name']}: {e}")
+
+    # Отправка альбома
+    if media_list:
+        caption = f"📅 Сегодня {day} {datetime.now().strftime('%B %Y')}"
+
+        await client.send_file(
+            channel_username,
+            file=media_list,
+            caption=caption,
+            parse_mode='html'
+        )
+        print(f"✅ Отправлен медиа-альбом за {day} число ({len(media_list)} файлов)")
+    else:
+        await client.send_message(channel_username, f"📭 В папке {day} нет фото или видео.")
+
+async def main():
+    await client.start()
+    print("🤖 Бот запущен и готов отправлять альбомы...")
+
+    # Авторизация Google Drive
+    creds = Credentials.from_authorized_user_file('token.json', 
+        ['https://www.googleapis.com/auth/drive.readonly'])
+    service = build('drive', 'v3', credentials=creds)
+
+    while True:
+        today = datetime.now().day
+        print(f"🔍 Проверка: сегодня {today} число...")
+
+        # Поиск папки с сегодняшним числом
+        query = f"name='{today}' and mimeType='application/vnd.google-apps.folder' and '{FOLDER_LINK.split('/')[-1]}' in parents"
+        results = service.files().list(q=query, fields="files(id, name)").execute()
+        folders = results.get('files', [])
+
+        if folders:
+            await send_all_files_as_album(service, folders[0]['id'], today)
+        else:
+            print(f"Папка {today} не найдена.")
+
+        await asyncio.sleep(3600)  # проверка раз в час
+
+if __name__ == '__main__':
+    asyncio.run(main())
