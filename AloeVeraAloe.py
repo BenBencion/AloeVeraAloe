@@ -11,6 +11,8 @@ api_id = 34096249
 api_hash = '2c7bde0885bafb5ecb20d8cbf29d421d'
 channel_username = '@BurkinaFaso11'
 
+BOT_TOKEN = '8258065758:AAF6tc5-4reHZNQGRE2XdOVPkCUZcpJVMo4'
+
 # Ссылка на главную папку Google Drive
 FOLDER_LINK = "https://drive.google.com/drive/folders/1U0EgoAyURcrr0PsOuWdk2kZQ5Ou6t2Rv"
 
