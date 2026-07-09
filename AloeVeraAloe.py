@@ -115,7 +115,7 @@ async def send_all_files_as_album(service, folder_id, day):
 
 
 async def main():
-    await client.start()
+    await client.start(bot_token=BOT_TOKEN)
     print("🤖 Бот запущен...")
 
     creds = Credentials.from_authorized_user_file('token.json', 
