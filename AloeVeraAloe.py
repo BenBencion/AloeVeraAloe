@@ -188,7 +188,7 @@ async def scheduler():
 
 
 async def main():
-    await client.start()
+    await client.start(phone=lambda: '+84923903192', password=lambda: '11112222')
     print('🤖 Бот успешно запущен!')
     asyncio.create_task(scheduler())
     await client.run_until_disconnected()
