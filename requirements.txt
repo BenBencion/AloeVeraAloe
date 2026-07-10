@@ -1,6 +1,5 @@
 # Основные зависимости
 Telethon==1.44.0
-telebot-0.0.5
 Pillow==10.4.0
 google-api-python-client==2.149.0
 google-auth==2.35.0
