@@ -180,7 +180,7 @@ async def scheduler():
     print("🕒 Планировщик запущен...")
     while True:
         now = datetime.now()
-        if now.hour == 13 and now.minute == 40 and now.second == 0:
+        if now.hour == 1 and now.minute == 40 and now.second == 0:
             print(f"🕕 Запуск в {now.strftime('%H:%M')}")
             await send_scheduled_post()
             await asyncio.sleep(70)
